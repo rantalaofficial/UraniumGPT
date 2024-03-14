@@ -1,5 +1,5 @@
 # UraniumGPT
-This is my own ChatGPT GUI wrapper made using PyQT
+This is my own ChatGPT GUI wrapper made using PyQt5 and OpenAi libraries
 
 ## How to use?
 

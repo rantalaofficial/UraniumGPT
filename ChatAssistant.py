@@ -15,6 +15,9 @@ class ChatAssistant():
     chats = []
     selectedChat = 0
 
+    youEmoji = '\U0001F525'
+    assistantEmoji = '\U0001F49A'
+
     def __init__(self):
         self.newChat()
 
@@ -24,7 +27,7 @@ class ChatAssistant():
 
         if len(self.chats) == 0:
             self.newChat()
-            
+
     def newChat(self):
         #check if the current chat is not empty
         if len(self.chats) == 0 or len(self.chats[self.selectedChat]) > 1:
@@ -45,11 +48,11 @@ class ChatAssistant():
             if message["role"] == "system":
                 pass
             elif message["role"] == "user":
-                chatText += "You: " + message["content"] + "\n"
+                chatText += self.youEmoji + 'You: ' + message["content"] + "\n\n"
             elif message["role"] == "assistant":
-                chatText += "UraniumGPT: " + message["content"] + "\n"
+                chatText += self.assistantEmoji + 'UraniumGPT: ' + message["content"] + '\n\n'
             else:
-                chatText += message["role"] + ": " + message["content"] + "\n"
+                chatText += message["role"] + ": " + message["content"] + "\n\n"
         return chatText
 
     def sendMessage(self, message):
@@ -68,3 +71,28 @@ class ChatAssistant():
         self.chats[self.selectedChat].append({"role": "assistant", "content": answer})
 
         return self.getChatText()
+    
+
+    def addChunk(self, chunk):
+        if chunk.choices[0].delta.content is not None:
+            self.chats[self.selectedChat][-1]['content'] += chunk.choices[0].delta.content
+        
+        return self.getChatText()
+
+    def sendMessageAndStream(self, message):
+        self.chats[self.selectedChat].append({"role": "user", "content": message})
+
+        print("Prompting using " + self.models[self.selectedModel] + " model...")
+
+        stream = client.chat.completions.create(
+            model=self.models[self.selectedModel],
+            messages=self.chats[self.selectedChat],
+            stream=True
+        )
+
+        self.chats[self.selectedChat].append({"role": "assistant", "content": ""})
+
+        return stream
+
+
+

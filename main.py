@@ -4,15 +4,31 @@ from PyQt5.QtCore import QThread, pyqtSignal
 
 from openai import OpenAI
 
+import time;
 
 from ChatAssistant import ChatAssistant
 
 assistant = ChatAssistant()
 
+class WorkerThread(QThread):
+    data_processed = pyqtSignal(str)
+
+    def __init__(self, message, parent=None):
+        self.message = message
+        super(WorkerThread, self).__init__(parent)
+
+    def run(self):
+        stream = assistant.sendMessageAndStream(self.message)
+
+        for chunk in stream:
+            if chunk.choices[0].delta.content is not None:
+                self.data_processed.emit(assistant.addChunk(chunk))
+
 class ChatApp(QWidget):
     def __init__(self):
         super().__init__()
         self.initUI()
+        self.answerIsStreaming = False
 
     def initUI(self):
         self.setWindowTitle('UraniumGPT')
@@ -25,8 +41,8 @@ class ChatApp(QWidget):
         for i in range(len(buttonLabels)):
             
             button = QPushButton(buttonLabels[i])
-            button.setFixedHeight(self.height() * 0.05)
-            button.setFixedWidth(self.width() * 0.15)
+            button.setFixedHeight(int(self.height() * 0.05))
+            button.setFixedWidth(int(self.width() * 0.15))
             if (i == 0): 
                 self.new_chat_button = button
                 button.setStyleSheet("background-color: rgb(0, 100, 0); color: white; font-size: 15px;")
@@ -59,13 +75,13 @@ class ChatApp(QWidget):
             self.message_box.sizePolicy().Expanding,
             self.message_box.sizePolicy().Preferred
         )
-        self.message_box.setFixedHeight(self.height() * 0.3)
+        self.message_box.setFixedHeight(int(self.height() * 0.3))
 
         # Send button
         self.send_button = QPushButton('Send')
         self.send_button.clicked.connect(self.send_message)
-        self.send_button.setFixedHeight(self.height() * 0.05)
-        self.send_button.setFixedWidth(self.width() * 0.2)
+        self.send_button.setFixedHeight(int(self.height() * 0.05))
+        self.send_button.setFixedWidth(int(self.width() * 0.2))
         send_button_layout = QHBoxLayout()
         send_button_layout.addStretch()
 
@@ -74,10 +90,13 @@ class ChatApp(QWidget):
 
         self.send_button.setStyleSheet("background-color: rgb(0, 100, 0); color: white; font-size: 20px;")
         self.setStyleSheet("background-color: rgb(50, 50, 50)")
-        self.chat_box.setStyleSheet("background-color: rgb(50, 50, 50); color: white; border: 2px solid rgb(100, 100, 100);")
-        self.message_box.setStyleSheet("background-color: rgb(50, 50, 50); color: white; border: 2px solid rgb(100, 100, 100);")
+        self.chat_box.setStyleSheet("background-color: rgb(50, 50, 50); color: white; border: 2px solid rgb(100, 100, 100); font-size: 14px; padding: 10px;")
+        self.message_box.setStyleSheet("background-color: rgb(50, 50, 50); color: white; border: 2px solid rgb(100, 100, 100); font-size: 14px; padding: 10px;")
 
         self.setLayout(self.layout)
+
+
+
 
     def updateNewChatButton(self):
         numberOfChats = len(assistant.chats)
@@ -114,14 +133,31 @@ class ChatApp(QWidget):
         assistant.selectedModel = assistant.models.index(self.sender().text())
 
     def send_message(self):
-        message = self.message_box.toPlainText()
-        # remove leading and trailing white spaces
-        message = message.strip()
+        message = self.message_box.toPlainText().strip()
 
-        if message:
+        if message and not self.answerIsStreaming:
             self.message_box.clear()
-            self.chat_box.clear()
-            self.chat_box.append(assistant.sendMessage(message))
+            self.send_message_multithread(message)
+
+            #self.chat_box.clear()
+            #self.chat_box.append(assistant.sendMessage(message))
+            
+    def send_message_multithread(self, message):
+        self.answerIsStreaming = True
+
+        self.worker_thread = WorkerThread(message)
+        self.worker_thread.data_processed.connect(self.updateChatBox)  # Connect signal to slot
+
+        self.worker_thread.finished.connect(self.multithread_finished)
+        self.worker_thread.start()
+
+    def multithread_finished(self):
+        self.worker_thread.quit()
+        self.answerIsStreaming = False
+
+    def updateChatBox(self, chatText):
+        self.chat_box.clear()
+        self.chat_box.append(chatText)
 
 
 if __name__ == '__main__':

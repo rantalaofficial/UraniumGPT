@@ -116,21 +116,29 @@ class ChatApp(QWidget):
 
     def new_chat(self):
         if assistant.newChat():
-            self.chat_textbox.clear()
-
-            new_chat_button = QPushButton('Chat ' + str(len(assistant.chats)))
+            new_chat_button = QPushButton('Chat ' + str(assistant.selectedChat + 1))
             new_chat_button.clicked.connect(self.chat_selected)
-            new_chat_button.setStyleSheet("background-color: %s; color: white; font-size: 20px;" % self.SIDEBAR_BUTTON)
             new_chat_button.setFixedHeight(50)
             self.left_column_layout.addWidget(new_chat_button)
             self.chat_buttons.append(new_chat_button)
 
+            self.chat_textbox.clear()
+            self.highlight_chat_button(assistant.selectedChat)
+        
     def chat_selected(self):
-        chat_number = int(self.sender().text().split(' ')[1]) - 1
+        assistant.selectedChat = int(self.sender().text().split(' ')[1]) - 1
 
-        assistant.selectedChat = chat_number
         self.chat_textbox.clear()
         self.chat_textbox.append(assistant.getChatText())
+
+        self.highlight_chat_button(assistant.selectedChat)
+
+    def highlight_chat_button(self, chat_index):
+        for button in range(len(self.chat_buttons)):
+            if button == chat_index:
+                self.chat_buttons[button].setStyleSheet("background-color: %s; color: white; font-size: 20px;" % self.SIDEBAR_BUTTON)
+            else:
+                self.chat_buttons[button].setStyleSheet("background-color: %s; color: white; font-size: 20px;" % self.LIGHT_GRAY)
 
     def backward(self):
         assistant.backward()

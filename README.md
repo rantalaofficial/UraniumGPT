@@ -1,5 +1,5 @@
 # UraniumGPT
-This is my own ChatGPT GUI wrapper made using PyQt5 and OpenAi libraries
+This is my minimalistic ChatGPT GUI wrapper made using PyQt5 and OpenAi libraries. It has all the functionality needed for basic LLM use: support for multiple chats, text streaming and model selection.
 
 ## How to use?
 

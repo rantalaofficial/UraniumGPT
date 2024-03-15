@@ -19,7 +19,7 @@ class ChatAssistant():
     assistantEmoji = '\U0001F49A'
 
     def __init__(self):
-        self.newChat()
+        pass
 
     def deleteChat(self):
         self.chats.pop(self.selectedChat)
@@ -30,9 +30,12 @@ class ChatAssistant():
 
     def newChat(self):
         #check if the current chat is not empty
-        if len(self.chats) == 0 or len(self.chats[self.selectedChat]) > 1:
+        if len(self.chats) == 0 or len(self.chats[-1]) > 1:
             self.chats.append([self.systemMessage])
             self.selectedChat = len(self.chats) - 1
+            return True
+        
+        return False
         
     def backward(self):
         if self.selectedChat > 0:

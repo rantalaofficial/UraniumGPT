@@ -1,6 +1,6 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QTextEdit, QPushButton, QRadioButton, QHBoxLayout
-from PyQt5.QtCore import QThread, pyqtSignal
+from PyQt5.QtCore import QThread, pyqtSignal, Qt
 
 from openai import OpenAI
 
@@ -25,107 +25,127 @@ class WorkerThread(QThread):
                 self.data_processed.emit(assistant.addChunk(chunk))
 
 class ChatApp(QWidget):
+
+    DARK_GRAY = "#181717"
+    LIGHT_GRAY = "#212121"
+
+    SIDEBAR_BUTTON = "#2F2F2F"
+
+    GREEN = "rgb(0, 100, 0)"
+
+    chat_buttons = []
+
     def __init__(self):
         super().__init__()
         self.initUI()
         self.answerIsStreaming = False
 
+    def addButton(self, layout, label, function, green=False):
+        button = QPushButton(label)
+        button.clicked.connect(function)
+        button.setFixedHeight(int(self.height() * 0.05))
+        button.setFixedWidth(int(self.width() * 0.15))
+
+        layout.addWidget(button)
+
     def initUI(self):
         self.setWindowTitle('UraniumGPT')
-        self.layout = QVBoxLayout()
-        self.setGeometry(100, 100, 1000, 800)
+        self.layout = QHBoxLayout() 
+        self.setGeometry(100, 100, 800, 600)
 
-        buttonLabels = ["New Chat", "Backward", "Forward", "Delete"]
-        clickFunctions = [self.new_chat, self.backward, self.forward, self.delete]
-        buttons_layout = QHBoxLayout()
-        for i in range(len(buttonLabels)):
-            
-            button = QPushButton(buttonLabels[i])
-            button.setFixedHeight(int(self.height() * 0.05))
-            button.setFixedWidth(int(self.width() * 0.15))
-            if (i == 0): 
-                self.new_chat_button = button
-                button.setStyleSheet("background-color: rgb(0, 100, 0); color: white; font-size: 15px;")
-            else:
-                button.setStyleSheet("color: white; font-size: 15px;")
+        left_column = QWidget()
+        left_column.setStyleSheet("background-color: %s;" % self.DARK_GRAY)
+        left_column_layout = QVBoxLayout(left_column)
+        left_column_layout.setContentsMargins(20, 20, 20, 20)
+        left_column.setFixedWidth(200)
+        left_column_layout.setAlignment(Qt.AlignTop)
+        self.left_column_layout = left_column_layout
 
-            button.clicked.connect(clickFunctions[i])
-            buttons_layout.addWidget(button)
-        buttons_layout.addStretch()
-        self.layout.addLayout(buttons_layout)
+        new_chat_button = QPushButton('New Chat')
+        new_chat_button.clicked.connect(self.new_chat)
+        new_chat_button.setStyleSheet("background-color: %s; color: white; font-size: 20px;" % self.GREEN)
+        new_chat_button.setFixedHeight(50)
+        self.new_chat_button = new_chat_button
 
-        # Chat box
-        self.chat_box = QTextEdit()
-        self.chat_box.setReadOnly(True)
-        self.layout.addWidget(self.chat_box)
+        left_column_layout.addWidget(new_chat_button)
 
-        # make a for loop to add radio buttons for each model
+        right_column = QWidget()
+        right_column.setStyleSheet("background-color: %s;" % self.LIGHT_GRAY)
+        right_column_layout = QVBoxLayout(right_column)
+        right_column_layout.setContentsMargins(20, 20, 20, 20)
+
+        chat_textbox = QTextEdit()
+        chat_textbox.setStyleSheet("background-color: %s; color: white; padding: 10px; font-size: 14px; border: none;" % self.LIGHT_GRAY)
+        chat_textbox.setReadOnly(True)
+        self.chat_textbox = chat_textbox
+
+        send_textbox = QTextEdit()
+        send_textbox.setStyleSheet("background-color: %s; color: white; padding: 10px; font-size: 14px; border: 2px solid %s;" % (self.LIGHT_GRAY, self.GREEN))
+        send_textbox.setFixedHeight(100) 
+        self.send_textbox = send_textbox
+
+        bottom_layout = QHBoxLayout()
+        bottom_layout.addStretch()
+
+        right_column_layout.addWidget(chat_textbox)
+        right_column_layout.addWidget(send_textbox)
+        right_column_layout.addLayout(bottom_layout)
+
         for i in range(len(assistant.models)):
             radio_button = QRadioButton(assistant.models[i])
             radio_button.toggled.connect(self.setModel)
             radio_button.setChecked(i == assistant.selectedModel)
             radio_button.setStyleSheet("color: white; font-size: 15px;")
-            self.layout.addWidget(radio_button)
+            bottom_layout.addWidget(radio_button)
 
-        # Message box
-        self.message_box = QTextEdit()
-        self.layout.addWidget(self.message_box)
+        send_button = QPushButton('Send')
+        send_button.clicked.connect(self.send_message)
+        send_button.setStyleSheet("background-color: %s; color: white; font-size: 20px;" % self.GREEN)
+        send_button.setFixedHeight(50)
+        send_button.setFixedWidth(150)
+        bottom_layout.addWidget(send_button)
 
-        self.message_box.setSizePolicy(
-            self.message_box.sizePolicy().Expanding,
-            self.message_box.sizePolicy().Preferred
-        )
-        self.message_box.setFixedHeight(int(self.height() * 0.3))
+        layout = QHBoxLayout()
+        layout.setSpacing(0)  
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(left_column)
+        layout.addWidget(right_column)
+        self.setLayout(layout)
 
-        # Send button
-        self.send_button = QPushButton('Send')
-        self.send_button.clicked.connect(self.send_message)
-        self.send_button.setFixedHeight(int(self.height() * 0.05))
-        self.send_button.setFixedWidth(int(self.width() * 0.2))
-        send_button_layout = QHBoxLayout()
-        send_button_layout.addStretch()
-
-        send_button_layout.addWidget(self.send_button)
-        self.layout.addLayout(send_button_layout)
-
-        self.send_button.setStyleSheet("background-color: rgb(0, 100, 0); color: white; font-size: 20px;")
-        self.setStyleSheet("background-color: rgb(50, 50, 50)")
-        self.chat_box.setStyleSheet("background-color: rgb(50, 50, 50); color: white; border: 2px solid rgb(100, 100, 100); font-size: 14px; padding: 10px;")
-        self.message_box.setStyleSheet("background-color: rgb(50, 50, 50); color: white; border: 2px solid rgb(100, 100, 100); font-size: 14px; padding: 10px;")
-
-        self.setLayout(self.layout)
-
-
-
-
-    def updateNewChatButton(self):
-        numberOfChats = len(assistant.chats)
-        if numberOfChats > 1:
-            self.new_chat_button.setText("New Chat (" + str(numberOfChats) + ")")
-        else:
-            self.new_chat_button.setText("New Chat")
+        self.new_chat()
 
     def new_chat(self):
-        assistant.newChat()
-        self.chat_box.clear()
+        if assistant.newChat():
+            self.chat_textbox.clear()
 
-        self.updateNewChatButton()
+            new_chat_button = QPushButton('Chat ' + str(len(assistant.chats)))
+            new_chat_button.clicked.connect(self.chat_selected)
+            new_chat_button.setStyleSheet("background-color: %s; color: white; font-size: 20px;" % self.SIDEBAR_BUTTON)
+            new_chat_button.setFixedHeight(50)
+            self.left_column_layout.addWidget(new_chat_button)
+            self.chat_buttons.append(new_chat_button)
 
+    def chat_selected(self):
+        chat_number = int(self.sender().text().split(' ')[1]) - 1
+
+        assistant.selectedChat = chat_number
+        self.chat_textbox.clear()
+        self.chat_textbox.append(assistant.getChatText())
 
     def backward(self):
         assistant.backward()
-        self.chat_box.clear()
-        self.chat_box.append(assistant.getChatText())
+        self.chat_textbox.clear()
+        self.chat_textbox.append(assistant.getChatText())
 
     def forward(self):
         assistant.forward()
-        self.chat_box.clear()
-        self.chat_box.append(assistant.getChatText())
+        self.chat_textbox.clear()
+        self.chat_textbox.append(assistant.getChatText())
 
     def delete(self):
         assistant.deleteChat()
-        self.chat_box.clear()
-        self.chat_box.append(assistant.getChatText())
+        self.chat_textbox.clear()
+        self.chat_textbox.append(assistant.getChatText())
 
         self.updateNewChatButton()
 
@@ -133,10 +153,10 @@ class ChatApp(QWidget):
         assistant.selectedModel = assistant.models.index(self.sender().text())
 
     def send_message(self):
-        message = self.message_box.toPlainText().strip()
+        message = self.send_textbox.toPlainText().strip()
 
         if message and not self.answerIsStreaming:
-            self.message_box.clear()
+            self.send_textbox.clear()
             self.send_message_multithread(message)
 
             #self.chat_box.clear()
@@ -156,8 +176,8 @@ class ChatApp(QWidget):
         self.answerIsStreaming = False
 
     def updateChatBox(self, chatText):
-        self.chat_box.clear()
-        self.chat_box.append(chatText)
+        self.chat_textbox.clear()
+        self.chat_textbox.append(chatText)
 
 
 if __name__ == '__main__':

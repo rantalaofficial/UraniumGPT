@@ -17,7 +17,8 @@ This is my own ChatGPT GUI wrapper made using PyQt5 and OpenAi libraries
 
 ## Screenshot from the app:
 
-![image](https://github.com/rantalaofficial/UraniumGPT/assets/33716618/15edc120-f7ca-4970-8f7e-d4c60e4c6012)
+![image](https://github.com/rantalaofficial/UraniumGPT/assets/33716618/c2864745-1cb5-4eeb-b217-b26bc8205e47)
+
 
 
 

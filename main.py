@@ -51,7 +51,7 @@ class ChatApp(QWidget):
     def initUI(self):
         self.setWindowTitle('UraniumGPT')
         self.layout = QHBoxLayout() 
-        self.setGeometry(100, 100, 800, 600)
+        self.setGeometry(100, 100, 1000, 800)
 
         left_column = QWidget()
         left_column.setStyleSheet("background-color: %s;" % self.DARK_GRAY)
@@ -75,15 +75,18 @@ class ChatApp(QWidget):
         right_column_layout.setContentsMargins(20, 20, 20, 20)
 
         chat_textbox = QTextEdit()
-        chat_textbox.setStyleSheet("background-color: %s; color: white; padding: 10px; font-size: 14px; border: none;" % self.LIGHT_GRAY)
+        chat_textbox.setStyleSheet("QTextEdit {background-color: %s; color: white; padding: 10px; font-size: 16px; border: none;} QTextEdit::verticalScrollBar { background-color: white; }" % self.LIGHT_GRAY)
         chat_textbox.setReadOnly(True)
+        chat_textbox.setFontFamily("Arial")
         self.chat_textbox = chat_textbox
 
         send_textbox = QTextEdit()
-        send_textbox.setStyleSheet("background-color: %s; color: white; padding: 10px; font-size: 14px; border: 2px solid %s;" % (self.LIGHT_GRAY, self.GREEN))
-        send_textbox.setFixedHeight(100) 
+        send_textbox.setStyleSheet("QTextEdit {background-color: %s; color: white; padding: 10px; font-size: 16px; border: 2px solid %s;} QTextEdit::verticalScrollBar { background-color: white; }" % (self.LIGHT_GRAY, self.GREEN))
+        send_textbox.setFixedHeight(200) 
+        send_textbox.setAcceptRichText(False)
+        send_textbox.setFontFamily("Arial")
         self.send_textbox = send_textbox
-
+        
         bottom_layout = QHBoxLayout()
         bottom_layout.addStretch()
 

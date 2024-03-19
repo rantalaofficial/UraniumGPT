@@ -17,7 +17,8 @@ This is a minimalistic ChatGPT GUI wrapper that utilizes OpenAI API. It is made 
 
 ## Screenshot from the app:
 
-![image](https://github.com/rantalaofficial/UraniumGPT/assets/33716618/08fa91f4-e10f-4173-bb7c-89f672f7d4b7)
+![image](https://github.com/rantalaofficial/UraniumGPT/assets/33716618/f5920a58-25c3-4ccd-913e-1fb149436a1c)
+
 
 
 

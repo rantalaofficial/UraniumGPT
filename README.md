@@ -29,7 +29,8 @@ OpenAI library is needed for the API connection, PyQt5 is needed for the GUI and
 
 ## Screenshot from the app:
 
-![image](https://github.com/rantalaofficial/UraniumGPT/assets/33716618/f5920a58-25c3-4ccd-913e-1fb149436a1c)
+![image](https://github.com/rantalaofficial/UraniumGPT/assets/33716618/7426c012-57db-46fb-b888-b7748cadd1ab)
+
 
 
 

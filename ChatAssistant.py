@@ -1,5 +1,8 @@
 from openai import OpenAI
 
+import mistune
+import os
+
 api_key = open("API_KEY", "r").read()
 
 client = OpenAI(api_key = api_key)
@@ -18,8 +21,11 @@ class ChatAssistant():
     youEmoji = '\U0001F525'
     assistantEmoji = '\U0001F49A'
 
-    def __init__(self):
-        pass
+    def __init__(self, loadChats):
+        if loadChats:
+            self.loadChats()
+        else:
+            self.newChat()
 
     def deleteChat(self):
         self.chats.pop(self.selectedChat)
@@ -48,14 +54,20 @@ class ChatAssistant():
     def getChatText(self):
         chatText = ""
         for message in self.chats[self.selectedChat]:
-            if message["role"] == "system":
+            role = message["role"]
+            content = message["content"]
+
+            # convert markdown to HTML
+            content = mistune.markdown(content)
+
+            if role == "system":
                 pass
-            elif message["role"] == "user":
-                chatText += self.youEmoji + 'You: ' + message["content"] + "\n\n"
-            elif message["role"] == "assistant":
-                chatText += self.assistantEmoji + 'UraniumGPT: ' + message["content"] + '\n\n'
+            elif role == "user":
+                chatText += self.youEmoji + 'You: ' + content + "\n\n"
+            elif role == "assistant":
+                chatText += self.assistantEmoji + 'UraniumGPT: ' + content + '\n\n'
             else:
-                chatText += message["role"] + ": " + message["content"] + "\n\n"
+                chatText += role + ": " + content + "\n\n"
         return chatText
 
     def sendMessage(self, message):
@@ -96,6 +108,23 @@ class ChatAssistant():
         self.chats[self.selectedChat].append({"role": "assistant", "content": ""})
 
         return stream
+    
+
+    def saveChats(self):
+        with open("chats.txt", "w") as file:
+            file.write(str(self.chats))
+
+    def loadChats(self):
+        if not "chats.txt" in os.listdir():
+            self.chats = []
+            self.newChat()
+            return False
+
+        with open("chats.txt", "r") as file:
+            self.chats = eval(file.read())
+            self.selectedChat = len(self.chats) - 1
+
+        return True
 
 
 

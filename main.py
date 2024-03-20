@@ -2,13 +2,16 @@ import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QTextEdit, QPushButton, QRadioButton, QHBoxLayout
 from PyQt5.QtCore import QThread, pyqtSignal, Qt
 
+from PyQt5 import QtGui
+from PyQt5.QtGui import QFont
+
 from openai import OpenAI
 
 import time;
 
 from ChatAssistant import ChatAssistant
 
-assistant = ChatAssistant()
+assistant = ChatAssistant(True)
 
 class WorkerThread(QThread):
     data_processed = pyqtSignal(str)
@@ -53,6 +56,8 @@ class ChatApp(QWidget):
         self.layout = QHBoxLayout() 
         self.setGeometry(100, 100, 1000, 800)
 
+        self.closeEvent = self.closeEvent
+
         left_column = QWidget()
         left_column.setStyleSheet("background-color: %s;" % self.DARK_GRAY)
         left_column_layout = QVBoxLayout(left_column)
@@ -77,14 +82,12 @@ class ChatApp(QWidget):
         chat_textbox = QTextEdit()
         chat_textbox.setStyleSheet("QTextEdit {background-color: %s; color: white; padding: 10px; font-size: 16px; border: none;} QTextEdit::verticalScrollBar { background-color: white; }" % self.LIGHT_GRAY)
         chat_textbox.setReadOnly(True)
-        chat_textbox.setFontFamily("Arial")
         self.chat_textbox = chat_textbox
 
         send_textbox = QTextEdit()
         send_textbox.setStyleSheet("QTextEdit {background-color: %s; color: white; padding: 10px; font-size: 16px; border: 2px solid %s;} QTextEdit::verticalScrollBar { background-color: white; }" % (self.LIGHT_GRAY, self.GREEN))
         send_textbox.setFixedHeight(200) 
         send_textbox.setAcceptRichText(False)
-        send_textbox.setFontFamily("Arial")
         self.send_textbox = send_textbox
         
         bottom_layout = QHBoxLayout()
@@ -115,15 +118,22 @@ class ChatApp(QWidget):
         layout.addWidget(right_column)
         self.setLayout(layout)
 
-        self.new_chat()
+        for i in range(len(assistant.chats)):
+            self.add_chat_button(i + 1)
+
+        self.highlight_chat_button(assistant.selectedChat)
+        self.updateChatBox(assistant.getChatText())
+
+    def add_chat_button(self, button_number):
+        new_chat_button = QPushButton('Chat ' + str(button_number))
+        new_chat_button.clicked.connect(self.chat_selected)
+        new_chat_button.setFixedHeight(50)
+        self.left_column_layout.addWidget(new_chat_button)
+        self.chat_buttons.append(new_chat_button)
 
     def new_chat(self):
         if assistant.newChat():
-            new_chat_button = QPushButton('Chat ' + str(assistant.selectedChat + 1))
-            new_chat_button.clicked.connect(self.chat_selected)
-            new_chat_button.setFixedHeight(50)
-            self.left_column_layout.addWidget(new_chat_button)
-            self.chat_buttons.append(new_chat_button)
+            self.add_chat_button(len(assistant.chats))
 
             self.chat_textbox.clear()
             self.highlight_chat_button(assistant.selectedChat)
@@ -131,8 +141,7 @@ class ChatApp(QWidget):
     def chat_selected(self):
         assistant.selectedChat = int(self.sender().text().split(' ')[1]) - 1
 
-        self.chat_textbox.clear()
-        self.chat_textbox.append(assistant.getChatText())
+        self.updateChatBox(assistant.getChatText())
 
         self.highlight_chat_button(assistant.selectedChat)
 
@@ -169,9 +178,6 @@ class ChatApp(QWidget):
         if message and not self.answerIsStreaming:
             self.send_textbox.clear()
             self.send_message_multithread(message)
-
-            #self.chat_box.clear()
-            #self.chat_box.append(assistant.sendMessage(message))
             
     def send_message_multithread(self, message):
         self.answerIsStreaming = True
@@ -188,11 +194,22 @@ class ChatApp(QWidget):
 
     def updateChatBox(self, chatText):
         self.chat_textbox.clear()
-        self.chat_textbox.append(chatText)
+        self.chat_textbox.setHtml(chatText + "<br><br>") # This ensures the horizontal scrollbar is not on top of the text
 
+        # scroll to the bottom
+        self.chat_textbox.moveCursor(QtGui.QTextCursor.End)
+
+    def closeEvent(self, event):  
+        assistant.saveChats()
+        print("Saving to chats.txt")
+        event.accept()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+
+    font = QFont("Arial", 14)
+    app.setFont(font)
+
     chat_app = ChatApp()
     chat_app.show()
     sys.exit(app.exec_())

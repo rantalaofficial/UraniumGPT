@@ -1,5 +1,13 @@
 # UraniumGPT
-This is a minimalistic ChatGPT GUI wrapper that utilizes OpenAI API. It is made using PyQt5 for the GUI and OpenAi official library for the API connection. It has all the functionality needed for basic LLM use: support for multiple chats, text streaming and model selection.
+This is a minimalistic ChatGPT GUI wrapper that utilizes OpenAI API. It is made using PyQt5 for the GUI and OpenAi official library for the API connection. It has all the functionality needed for basic LLM use.
+
+## Features
+
+- Supports text streaming from OpenAI API
+- Renders responses in HTML
+- Supports multiple chats
+- Chats are automatically saved/loaded to/from a text file
+- Selected model can be changed between messages
 
 ## How to use?
 

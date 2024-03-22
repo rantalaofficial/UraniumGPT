@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QTextEdit, QPushButton, QRadioButton, QHBoxLayout
+from PyQt5.QtWidgets import QTextEdit, QPushButton, QRadioButton
 
 def createButton(label, callback, background_color, color, font_size, height = None, width = None):
     button = QPushButton(label)

@@ -7,7 +7,6 @@ api_key = open("API_KEY", "r").read()
 
 client = OpenAI(api_key = api_key)
 
-
 class ChatAssistant():
 
     systemMessage = {"role": "system", "content": "You are UraniumGPT which a helpful AI assistant based on ChatGPT. It is named after it's creator Mr. Uranium."}
@@ -29,7 +28,7 @@ class ChatAssistant():
 
     def deleteChat(self):
         self.chats.pop(self.selectedChat)
-        self.selectedChat = max(0, self.selectedChat - 1)
+        self.selectedChat = min(self.selectedChat, len(self.chats) - 1)
 
         if len(self.chats) == 0:
             self.newChat()

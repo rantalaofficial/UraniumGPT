@@ -1,14 +1,11 @@
 import sys
+
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QTextEdit, QPushButton, QRadioButton, QHBoxLayout
 from PyQt5.QtCore import QThread, pyqtSignal, Qt
-
 from PyQt5 import QtGui
 from PyQt5.QtGui import QFont
 
-from openai import OpenAI
-
-import time;
-
+from GuiHelper import *
 from ChatAssistant import ChatAssistant
 
 assistant = ChatAssistant(True)
@@ -38,18 +35,11 @@ class ChatApp(QWidget):
 
     chat_buttons = []
 
+    answerIsStreaming = False
+
     def __init__(self):
         super().__init__()
         self.initUI()
-        self.answerIsStreaming = False
-
-    def addButton(self, layout, label, function, green=False):
-        button = QPushButton(label)
-        button.clicked.connect(function)
-        button.setFixedHeight(int(self.height() * 0.05))
-        button.setFixedWidth(int(self.width() * 0.15))
-
-        layout.addWidget(button)
 
     def initUI(self):
         self.setWindowTitle('UraniumGPT')
@@ -60,56 +50,35 @@ class ChatApp(QWidget):
 
         left_column = QWidget()
         left_column.setStyleSheet("background-color: %s;" % self.DARK_GRAY)
+        left_column.setFixedWidth(200)
+
         left_column_layout = QVBoxLayout(left_column)
         left_column_layout.setContentsMargins(20, 20, 20, 20)
-        left_column.setFixedWidth(200)
         left_column_layout.setAlignment(Qt.AlignTop)
         self.left_column_layout = left_column_layout
-
-        new_chat_button = QPushButton('New Chat')
-        new_chat_button.clicked.connect(self.new_chat)
-        new_chat_button.setStyleSheet("background-color: %s; color: white; font-size: 20px;" % self.GREEN)
-        new_chat_button.setFixedHeight(50)
-        self.new_chat_button = new_chat_button
-
-        left_column_layout.addWidget(new_chat_button)
-
+        left_column_layout.addWidget(createButton('New Chat', self.new_chat, self.GREEN, "white", 20, 50))
+        
         right_column = QWidget()
         right_column.setStyleSheet("background-color: %s;" % self.LIGHT_GRAY)
         right_column_layout = QVBoxLayout(right_column)
         right_column_layout.setContentsMargins(20, 20, 20, 20)
 
-        chat_textbox = QTextEdit()
-        chat_textbox.setStyleSheet("QTextEdit {background-color: %s; color: white; padding: 10px; font-size: 16px; border: none;} QTextEdit::verticalScrollBar { background-color: white; }" % self.LIGHT_GRAY)
-        chat_textbox.setReadOnly(True)
-        self.chat_textbox = chat_textbox
+        self.chat_textbox = createTextBox(True, self.LIGHT_GRAY, None, None)
+        right_column_layout.addWidget(self.chat_textbox)
 
-        send_textbox = QTextEdit()
-        send_textbox.setStyleSheet("QTextEdit {background-color: %s; color: white; padding: 10px; font-size: 16px; border: 2px solid %s;} QTextEdit::verticalScrollBar { background-color: white; }" % (self.LIGHT_GRAY, self.GREEN))
-        send_textbox.setFixedHeight(200) 
-        send_textbox.setAcceptRichText(False)
-        self.send_textbox = send_textbox
+        self.send_textbox = createTextBox(False, self.LIGHT_GRAY, self.GREEN, 200)
+        right_column_layout.addWidget(self.send_textbox)
         
         bottom_layout = QHBoxLayout()
-        bottom_layout.addStretch()
-
-        right_column_layout.addWidget(chat_textbox)
-        right_column_layout.addWidget(send_textbox)
         right_column_layout.addLayout(bottom_layout)
 
-        for i in range(len(assistant.models)):
-            radio_button = QRadioButton(assistant.models[i])
-            radio_button.toggled.connect(self.setModel)
-            radio_button.setChecked(i == assistant.selectedModel)
-            radio_button.setStyleSheet("color: white; font-size: 15px;")
-            bottom_layout.addWidget(radio_button)
+        bottom_layout.addWidget(createButton('Delete Chat', self.delete, self.SIDEBAR_BUTTON, "white", 20, 50, 150))
+        bottom_layout.addStretch()
 
-        send_button = QPushButton('Send')
-        send_button.clicked.connect(self.send_message)
-        send_button.setStyleSheet("background-color: %s; color: white; font-size: 20px;" % self.GREEN)
-        send_button.setFixedHeight(50)
-        send_button.setFixedWidth(150)
-        bottom_layout.addWidget(send_button)
+        for i in range(len(assistant.models)):
+            bottom_layout.addWidget(createRadioButton(assistant.models[i], self.setModel, i == assistant.selectedModel))
+
+        bottom_layout.addWidget(createButton('Send', self.send_message, self.GREEN, "white", 20, 50, 150))
 
         layout = QHBoxLayout()
         layout.setSpacing(0)  
@@ -118,18 +87,27 @@ class ChatApp(QWidget):
         layout.addWidget(right_column)
         self.setLayout(layout)
 
+        self.reset_chat_buttons()
+
+    def add_chat_button(self, button_number):
+        new_chat_button = createButton('Chat ' + str(button_number), self.chat_selected, self.SIDEBAR_BUTTON, "white", 20, 50)
+
+        self.left_column_layout.addWidget(new_chat_button)
+        self.chat_buttons.append(new_chat_button)
+
+    def reset_chat_buttons(self):
+        for button in self.chat_buttons:
+            self.left_column_layout.removeWidget(button)
+            button.deleteLater()
+
+        self.chat_buttons = []
+
         for i in range(len(assistant.chats)):
             self.add_chat_button(i + 1)
 
         self.highlight_chat_button(assistant.selectedChat)
         self.updateChatBox(assistant.getChatText())
 
-    def add_chat_button(self, button_number):
-        new_chat_button = QPushButton('Chat ' + str(button_number))
-        new_chat_button.clicked.connect(self.chat_selected)
-        new_chat_button.setFixedHeight(50)
-        self.left_column_layout.addWidget(new_chat_button)
-        self.chat_buttons.append(new_chat_button)
 
     def new_chat(self):
         if assistant.newChat():
@@ -152,22 +130,11 @@ class ChatApp(QWidget):
             else:
                 self.chat_buttons[button].setStyleSheet("background-color: %s; color: white; font-size: 20px;" % self.LIGHT_GRAY)
 
-    def backward(self):
-        assistant.backward()
-        self.chat_textbox.clear()
-        self.chat_textbox.append(assistant.getChatText())
-
-    def forward(self):
-        assistant.forward()
-        self.chat_textbox.clear()
-        self.chat_textbox.append(assistant.getChatText())
-
     def delete(self):
         assistant.deleteChat()
-        self.chat_textbox.clear()
-        self.chat_textbox.append(assistant.getChatText())
+        self.updateChatBox(assistant.getChatText())
 
-        self.updateNewChatButton()
+        self.reset_chat_buttons()
 
     def setModel(self):
         assistant.selectedModel = assistant.models.index(self.sender().text())

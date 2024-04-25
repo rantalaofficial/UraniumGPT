@@ -43,10 +43,7 @@ class ChatApp(QWidget):
 
     def initUI(self):
         self.setWindowTitle('UraniumGPT')
-        self.layout = QHBoxLayout() 
         self.setGeometry(100, 100, 1000, 800)
-
-        self.closeEvent = self.closeEvent
 
         left_column = QWidget()
         left_column.setStyleSheet("background-color: %s;" % self.DARK_GRAY)
@@ -67,6 +64,7 @@ class ChatApp(QWidget):
         right_column_layout.addWidget(self.chat_textbox)
 
         self.send_textbox = createTextBox(False, self.LIGHT_GRAY, self.GREEN, 200)
+        self.send_textbox.setAcceptRichText(False)
         right_column_layout.addWidget(self.send_textbox)
         
         bottom_layout = QHBoxLayout()
@@ -88,6 +86,8 @@ class ChatApp(QWidget):
         self.setLayout(layout)
 
         self.reset_chat_buttons()
+
+        self.closeEvent = self.closeEvent
 
     def add_chat_button(self, button_number):
         new_chat_button = createButton('Chat ' + str(button_number), self.chat_selected, self.SIDEBAR_BUTTON, "white", 20, 50)
